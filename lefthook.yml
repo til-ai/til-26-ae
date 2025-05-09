@@ -1,0 +1,13 @@
+# lefthook.yml
+
+pre-commit:
+  parallel: true
+  jobs:
+    - run: uv run ruff check --fix {staged_files}
+      glob: "*.py"
+      stage_fixed: true
+    - run: uv run ruff format {staged_files}
+      glob: "*.py"
+      stage_fixed: true
+    - run: uv run pylint --errors-only {staged_files}
+      glob: "*.py"

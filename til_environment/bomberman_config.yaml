@@ -1,0 +1,77 @@
+env:
+  grid_size: 16
+  num_teams: 6
+  num_iters: 200
+  novice: true
+  render_mode: human
+  tile_respawn_steps: 40        
+
+dynamics:
+  arena:
+    wall_prob: 1              
+    wall_destructible_ratio: 0.40 
+    mission_prob: 0.30
+    recon_prob: 0.40      
+    resource_prob: 0.30
+
+  vision:
+    left: 2
+    right: 2
+    behind: 2
+    ahead: 4
+
+entities:
+  agent:
+    health: 60.0
+    max_health: 60.0
+    freeze_turns: 3
+
+  base:
+    health: 100
+    max_health: 100
+    vision_radius: 3
+
+  bomb:
+    attack: 20.0
+    blast_radius: 2
+    timer: 3
+
+  mission:
+    reward_value: 5.0
+    difficulty: 1.0
+
+  recon:
+    reward_value: 1.0
+
+  resource:
+    amount: 0.5
+
+resources:
+  bomb_cost: 1.5
+  base_resource_rate: 0.1
+  starting_bombs: 3
+  starting_resources: 0.0
+  max_team_resources: 100.0
+  max_team_bombs: 50  # how do you even
+
+renderer:
+  window_size: 768
+  debug: false
+  render_fps: 8
+  replay_dir: null
+
+rewards:
+  agent_collide_wall: 0
+  agent_collide_agent: 0
+  collect_mission: 5.0
+  collect_recon: 1.0
+  collect_resource: 2.0
+  attack_damage: 1.0
+  attack_kill: 30.0
+  destroy_wall: 0
+  destroy_enemy_base: 50.0
+  own_base_destroyed: -50.0
+  step_penalty: 0
+  stationary_penalty: 0
+  invalid_action: 0
+  truncation: 0.0
