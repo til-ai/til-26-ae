@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 
+from collections import defaultdict
 import numpy as np
 from gymnasium.utils.seeding import np_random
 from omegaconf import DictConfig
@@ -224,14 +225,8 @@ class Dynamics:
                         ),
                         scale_by_return=True,
                     ),
-                    EmitRule(
-                        event_type="attack_kill",
-                        recipient_fn=lambda r, amt, intent=None: (
-                            intent.attribute_rewards if intent is not None else None
-                        ),
-                        condition=lambda r, amt, intent=None, e=entity: e.health <= 0
-                        and not e.is_frozen,
-                    ),
+                    # attack_kill is NOT wired here — damage_phase awards it after
+                    # collecting all contributors so the reward can be split evenly.
                     # Equal-and-opposite penalty to the agent who was hit.
                     EmitRule(
                         event_type="attack_damage",
@@ -263,14 +258,7 @@ class Dynamics:
                         scale_by_return=True,
                         multiplier=-1.0,
                     ),
-                    # destroy_enemy_base fires only to the agent who landed the killing blow.
-                    EmitRule(
-                        event_type="destroy_enemy_base",
-                        recipient_fn=lambda r, amt, intent=None: (
-                            intent.attribute_rewards if intent is not None else None
-                        ),
-                        condition=lambda r, amt, intent=None, e=entity: not e.alive,
-                    ),
+                    # destroy_enemy_base is NOT wired here — same reason as attack_kill.
                     # own_base_destroyed fires to the owning agent when base dies.
                     EmitRule(
                         event_type="own_base_destroyed",
@@ -703,31 +691,58 @@ class Dynamics:
 
     def damage_phase(self, intents: list[AttackIntent]) -> dict[str, dict]:
         """
-        defenders receive queued damage.
+        defenders receive queued damage; kill/destroy rewards are split evenly
+        among all unique bomb-placers that dealt >0 damage to a given defender.
 
-        After each defender's ``receive_damage`` call, if the defender is an
-        Agent whose HP just hit zero (and isn't yet frozen), enter the
-        frozen state.  Freeze-setting is deliberately done *after* the
-        reward hook evaluates its ``attack_kill`` condition (which checks
-        ``not is_frozen``) so the kill event fires exactly once. <- thanks claude
+        ^ thanks claude. you will do damage anyways but yeah thanks for the help
         """
-        results: dict[str, dict] = {}
+        # Group intents by defender so we can split kill/destroy credit.
+        by_defender: dict[str, list[AttackIntent]] = defaultdict(list)
         for intent in intents:
-            defender = self.registry.get(intent.defender_id)
+            by_defender[intent.defender_id].append(intent)
+
+        results: dict[str, dict] = {}
+        for defender_id, group in by_defender.items():
+            defender = self.registry.get(defender_id)
             if defender is None or not defender.alive:
                 continue
-            actual_dmg = defender.receive_damage(intent.damage, intent)
-            if (
-                isinstance(defender, Agent)
-                and defender.health <= 0
-                and not defender.is_frozen
-            ):
+
+            # Track which placers dealt actual damage (for split credit).
+            contributors: list[str] = []
+
+            for intent in group:
+                # Skip if the defender died mid-group (Agent entered frozen state).
+                if not defender.alive:
+                    break
+                if isinstance(defender, Agent) and defender.is_frozen:
+                    break
+
+                actual_dmg = defender.receive_damage(intent.damage, intent)
+                if actual_dmg > 0 and intent.attribute_rewards not in contributors:
+                    contributors.append(intent.attribute_rewards)
+
+                results[intent.attacker_id] = {
+                    "attacked": defender_id,
+                    "attack_damage": actual_dmg,
+                    "attribute_rewards": intent.attribute_rewards,
+                }
+
+            if not contributors:
+                continue
+
+            split = 1.0 / len(contributors)
+
+            # Agent killed → freeze + split attack_kill among contributors.
+            if isinstance(defender, Agent) and defender.health <= 0 and not defender.is_frozen:
                 defender.frozen_ticks = defender.freeze_duration
-            results[intent.attacker_id] = {
-                "attacked": intent.defender_id,
-                "attack_damage": actual_dmg,
-                "attribute_rewards": intent.attribute_rewards,
-            }
+                for placer_id in contributors:
+                    self.rewards.award(placer_id, "attack_kill", multiplier=split)
+
+            # Base destroyed → split destroy_enemy_base among contributors.
+            elif isinstance(defender, Base) and not defender.alive:
+                for placer_id in contributors:
+                    self.rewards.award(placer_id, "destroy_enemy_base", multiplier=split)
+
         return results
 
     def upkeep(self) -> dict:

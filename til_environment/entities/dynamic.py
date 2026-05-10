@@ -46,8 +46,8 @@ class Agent(Entity, Defender, Vision):
     normal gameplay).
     """
 
-    health: float = 100.0
-    max_health: float = 100.0
+    health: float = 60.0
+    max_health: float = 60.0
     direction: int = 0
     frozen_ticks: int = 0
     freeze_duration: int = 10
@@ -99,8 +99,8 @@ class Agent(Entity, Defender, Vision):
 class Base(Entity, Defender, Vision):
     """Stationary team structure.  The team loses if its base is destroyed."""
 
-    health: float = 500.0
-    max_health: float = 500.0
+    health: float = 100.0
+    max_health: float = 100.0
     vision_type: VisionType = field(default_factory=lambda: SquareVision(3))
 
     def get_visible_cells(self) -> list[tuple[int, int]]:

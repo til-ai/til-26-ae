@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from enum import IntEnum, auto
 from typing import TYPE_CHECKING, Callable
-
+from til_environment.types import Direction
 import numpy as np
 
 if TYPE_CHECKING:
@@ -61,7 +61,11 @@ NUM_ACTIONS_V2 = len(Action)
 # ActionMask
 # ---------------------------------------------------------------------------
 class ActionMask:
-    """Builds and validates per-agent action masks."""
+    """
+    Builds and validates per-agent action masks.
+    
+    If you properly read and discovered the code, this should render agent_collide_wall and agent_collide_agent
+    """
 
     def __init__(self, dynamics: "Dynamics") -> None:
         self._dyn = dynamics
@@ -96,14 +100,10 @@ class ActionMask:
     # -- per-action validators ---------------------------------------------
 
     def _can_forward(self, agent: "Agent") -> bool:
-        from til_environment.types import Direction
-
         direction = Direction(agent.direction)
         return not self._dyn._blocks_movement(agent, direction)
 
     def _can_backward(self, agent: "Agent") -> bool:
-        from til_environment.types import Direction
-
         direction = Direction((agent.direction + 2) % 4)
         return not self._dyn._blocks_movement(agent, direction)
 

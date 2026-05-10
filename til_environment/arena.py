@@ -33,7 +33,6 @@ from __future__ import annotations
 
 import logging
 import math
-import signal
 from dataclasses import dataclass
 
 import numpy as np
@@ -797,21 +796,14 @@ class ArenaGenerator:
         self, rng: np.random.Generator, timeout: int = 2, retries: int = 5,
         num_teams: int = 1, phase_offset: float = 0.0,
     ) -> None:
-        def _handler(signum, frame):
-            raise TimeoutError("Maze generation timed out")
-
         for attempt in range(retries):
             try:
-                signal.signal(signal.SIGALRM, _handler)
-                signal.alarm(timeout)
                 self._maze.generator = self._new_maze_generator(
                     rng, num_teams=num_teams, phase_offset=phase_offset
                 )
                 self._maze.generate()
-                signal.alarm(0)
                 return
             except Exception as exc:
-                signal.alarm(0)
                 logger.warning("Maze gen attempt %d failed: %s", attempt, exc)
         raise RuntimeError(f"Failed to generate maze after {retries} attempts")
 
