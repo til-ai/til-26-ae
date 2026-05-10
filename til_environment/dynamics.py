@@ -434,7 +434,7 @@ class Dynamics:
             "direction": agent.direction,
             "location": agent.position.copy(),
             "base_location": base.position.copy() if bases else np.zeros(2, dtype=np.uint8),
-            "health": agent.health,
+            "health": np.array([agent.health], dtype=np.float32),
             "frozen_ticks": agent.frozen_ticks,
             "base_health": np.array([base_health], dtype=np.float32),
             "team_resources": np.array(
