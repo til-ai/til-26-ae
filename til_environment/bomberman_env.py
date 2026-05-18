@@ -261,6 +261,7 @@ class Bomberman(AECEnv[AgentID, ObsType, ActionType]):
             8. Pull rewards, rebuild observations, render
         """
         self.dynamics.rewards.clear_step()
+        self.dynamics.mission_collectors_this_step.clear()
 
         validated_actions: dict[str, int] = {}
         for agent_id, action in self._agent_actions.items():
@@ -333,6 +334,7 @@ class Bomberman(AECEnv[AgentID, ObsType, ActionType]):
             "base_health": bases[0].health if bases else 0.0,
             "team_resources": self.dynamics.team_resources.get(agent.team, 0.0),
             "team_bombs": self.dynamics.team_bombs.get(agent.team, 0),
+            "add_mission": agent_id in self.dynamics.mission_collectors_this_step,
         }
 
     # ── render / close ─────────────────────────────────────────────────────
