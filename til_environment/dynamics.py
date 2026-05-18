@@ -191,6 +191,12 @@ class Dynamics:
         # draw blast-cell overlays on the frame where a bomb explodes.
         self.last_explosions: list[dict] = []
 
+        # Agent IDs that stepped onto a Mission tile during the current
+        # movement phase. Cleared by Bomberman at the start of each round
+        # (before resolve_movement_actions) and read by _build_info to set
+        # info["add_mission"]. Drives the competition server's mission queue.
+        self.mission_collectors_this_step: set[str] = set()
+
         # Per-team economy — floating-point ratios against bomb_cost.
         self.team_resources: dict[int, float] = {t: 0.0 for t in range(self.num_teams)}
         self.team_bombs: dict[int, int] = {t: 0 for t in range(self.num_teams)}
@@ -311,6 +317,7 @@ class Dynamics:
         self.registry.clear()
         self._bomb_counter = 0
         self._respawn_queue = []
+        self.mission_collectors_this_step = set()
 
         # Reset per-team economy to config defaults.
         rcfg = self.cfg.resources
@@ -846,6 +853,7 @@ class Dynamics:
                 self._queue_respawn("resource", pos, {"amount": entity.amount}, steps)
             elif isinstance(entity, Mission):
                 entity.collect(agent.team, agent.entity_id)
+                self.mission_collectors_this_step.add(agent.entity_id)
                 self._queue_respawn(
                     "mission",
                     pos,
