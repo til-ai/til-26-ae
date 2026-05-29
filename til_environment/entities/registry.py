@@ -173,44 +173,43 @@ class EntityRegistry:
         """Return all alive entities at grid position (x, y)."""
         return [
             e
-            for eid in self.pos_index[x][y]
+            for eid in sorted(self.pos_index[x][y])
             if (e := self._entities.get(eid)) is not None and e.alive
         ]
 
     # -- filtered views -----------------------------------------------------
 
+    def _materialize(self, ids: Iterable[str]) -> list[Entity]:
+        """Resolve entity ids to entities in deterministic (sorted) order.
+
+        Single chokepoint for set→list conversion: index sets have no stable
+        iteration order, so every accessor that fans out from an id-set routes
+        through here to guarantee reproducible ordering. Stale ids are dropped.
+        """
+        return [self._entities[eid] for eid in sorted(ids) if eid in self._entities]
+
     def _alive_of_type_ids(self, cls: type) -> list[str]:
         type_ids = self.type_index.get(cls, set())
         alive_ids = self.status_index[EntityStatus.ACTIVE]
-        return [eid for eid in (type_ids & alive_ids) if eid in self._entities]
+        return sorted(eid for eid in (type_ids & alive_ids) if eid in self._entities)
 
     def _alive_of_type(self, cls: type) -> list[Entity]:
         type_ids = self.type_index.get(cls, set())
         alive_ids = self.status_index[EntityStatus.ACTIVE]
-        return [
-            self._entities[eid]
-            for eid in (type_ids & alive_ids)
-            if eid in self._entities
-        ]
+        return self._materialize(type_ids & alive_ids)
 
     def _alive_of_type_team(self, cls: type, team: int | None) -> list[Entity]:
         type_ids = self.type_index.get(cls, set())
         alive_ids = self.status_index[EntityStatus.ACTIVE]
         team_ids = self.team_index.get(team, set())
-        return [
-            self._entities[eid]
-            for eid in (type_ids & alive_ids & team_ids)
-            if eid in self._entities
-        ]
+        return self._materialize(type_ids & alive_ids & team_ids)
 
     def _alive_of_types(self, *classes: type) -> list[Entity]:
         alive_ids = self.status_index[EntityStatus.ACTIVE]
         union: set[str] = set()
         for cls in classes:
             union |= self.type_index.get(cls, set())
-        return [
-            self._entities[eid] for eid in (union & alive_ids) if eid in self._entities
-        ]
+        return self._materialize(union & alive_ids)
 
     def _alive_of_types_team(self, team: int | None, *classes: type) -> list[Entity]:
         alive_ids = self.status_index[EntityStatus.ACTIVE]
@@ -218,34 +217,18 @@ class EntityRegistry:
         union: set[str] = set()
         for cls in classes:
             union |= self.type_index.get(cls, set())
-        return [
-            self._entities[eid]
-            for eid in (union & alive_ids & team_ids)
-            if eid in self._entities
-        ]
+        return self._materialize(union & alive_ids & team_ids)
 
     def by_type(self, cls: type) -> list[Entity]:
-        return [
-            self._entities[eid]
-            for eid in self.type_index.get(cls, ())
-            if eid in self._entities
-        ]
+        return self._materialize(self.type_index.get(cls, set()))
 
     def by_team(self, team: int) -> list[Entity]:
-        return [
-            self._entities[eid]
-            for eid in self.team_index.get(team, ())
-            if eid in self._entities
-        ]
+        return self._materialize(self.team_index.get(team, set()))
 
     def by_type_and_team(self, cls: type, team: int) -> list[Entity]:
         type_ids = self.type_index.get(cls, set())
         team_ids = self.team_index.get(team, set())
-        return [
-            self._entities[eid]
-            for eid in (type_ids & team_ids)
-            if eid in self._entities
-        ]
+        return self._materialize(type_ids & team_ids)
 
     # -- concrete-type accessors -------------------------------------------
 
@@ -274,8 +257,7 @@ class EntityRegistry:
         return self._alive_of_type(Resource)  # type: ignore[return-value]
 
     def alive(self) -> list[Entity]:
-        alive_ids = self.status_index[EntityStatus.ACTIVE]
-        return [self._entities[eid] for eid in alive_ids if eid in self._entities]
+        return self._materialize(self.status_index[EntityStatus.ACTIVE])
 
     # -- protocol-keyed trait accessors ------------------------------------
 

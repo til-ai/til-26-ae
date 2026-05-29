@@ -672,7 +672,7 @@ class Dynamics:
                 cx, cy = int(c[0]), int(c[1])
                 target_ids |= self.registry.pos_index[cx][cy]  # L bro
 
-            for eid in target_ids & defender_ids:
+            for eid in sorted(target_ids & defender_ids):
                 target = self.registry.get(eid)
                 if target is None:
                     continue
