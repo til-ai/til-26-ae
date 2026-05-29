@@ -57,7 +57,7 @@ class Query(Generic[T]):
         return self
 
     def all(self) -> list[T]:
-        ids = (
+        ids = sorted(
             self._ids if self._ids is not None else set(self._registry._entities.keys())
         )
         entities = [

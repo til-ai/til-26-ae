@@ -563,38 +563,34 @@ class Dynamics:
             results[agent_id] = {"placed": bomb_id, "reason": "ok"}
         return results
 
-    def _directional_blast(
+    def _compute_blast(
         self,
         bomb: "Bomb",
-    ) -> tuple[list[np.ndarray], int]:
-        """Compute blast cells and wall destructions for an expired bomb.
+    ) -> tuple[list[np.ndarray], set[tuple[int, int, int]]]:
+        """Compute blast cells and candidate wall destructions for an expired bomb.
+
+        Reads the current wall state but does NOT mutate it — callers are
+        responsible for applying destructions after all bombs have been evaluated.
 
         Pass 1 — tile reachability (blast damage cells):
             For each tile within the Chebyshev blast radius, compute LOS from
             the bomb using all walls (indestructible AND destructible) as
-            blockers.  Reachable tiles are added to blast_cells; agents there
-            take damage.
+            blockers.  Reachable tiles are added to blast_cells.
 
-        Pass 2 — wall destruction (wall-first query):
+        Pass 2 — wall destruction candidates (wall-first query):
             Iterate directly over every wall edge in the arena.  For each edge
             within blast radius, check if the blast can reach *either* adjacent
-            tile.  If yes and the edge is destructible, mark it for removal.
-            Querying walls directly (rather than deriving them from reachable
-            tiles) means walls are correctly found regardless of which path the
-            LOS took to reach either neighbour.
+            tile.  If yes and the edge is destructible, add it to the returned set.
 
-        Both passes read the unmodified wall state.  Destructions are applied
-        after all LOS checks so removing one wall cannot cascade-open new blast
-        paths in the same detonation.
-
-        Returns (blast_cells, walls_destroyed).  The bomb's own cell is always
-        included.
+        Returns (blast_cells, walls_to_destroy) where walls_to_destroy is a set
+        of (wx, wy, direction_value) tuples.  The bomb's own cell is always
+        included in blast_cells.
         """
         origin = bomb.position
         ox, oy = int(origin[0]), int(origin[1])
         gs = self.arena_state.grid_size
         r = bomb.blast_radius
-        state = self.arena_state._state  # snapshot — read before any destruction
+        state = self.arena_state._state
 
         # ── Pass 1: blast cells ───────────────────────────────────────────────
         blast: list[np.ndarray] = []
@@ -605,27 +601,18 @@ class Dynamics:
                     blast.append(np.array([tx, ty]))
                     reachable.add((tx, ty))
 
-        # ── Pass 2: wall destruction ──────────────────────────────────────────
-        # Iterate WallEdge objects directly — one object per physical wall,
-        # with a single authoritative .destructible flag.
+        # ── Pass 2: wall destruction candidates ──────────────────────────────
         walls_to_destroy: set[tuple[int, int, int]] = set()
         for we in self.arena_state.wall_edges.values():
             if not we.destructible:
                 continue
-            # Within blast radius if either adjacent tile is in range.
             if (max(abs(we.ax - ox), abs(we.ay - oy)) > r
                     and max(abs(we.bx - ox), abs(we.by - oy)) > r):
                 continue
-            # Destroy if the blast reaches either adjacent tile.
             if (we.ax, we.ay) in reachable or (we.bx, we.by) in reachable:
                 walls_to_destroy.add((we.ax, we.ay, we.direction.value))
 
-        walls_destroyed = 0
-        for wx, wy, wd in walls_to_destroy:
-            if self.arena_state.destroy_wall(wx, wy, Direction(wd)):
-                walls_destroyed += 1
-
-        return blast, walls_destroyed
+        return blast, walls_to_destroy
 
     def resolve_movement_actions(self, actions: dict[str, int]) -> dict[str, dict]:
         """resolve all movement / turn / stay actions."""
@@ -638,19 +625,36 @@ class Dynamics:
         """
         expired bombs detonate and produce AttackIntents.
 
-        the first wall edge on each ray stops the ray: 
-        destructible edges are destroyed
-        indestructible edges block the blast without being destroyed,  cuz yknow
+        Two-pass design to guarantee determinism regardless of how many bombs
+        expire on the same tick:
+
+        Pass 1 — compute (no mutations):
+            All bombs read the same unmodified wall snapshot.  Blast cells and
+            AttackIntents are collected; candidate wall destructions are
+            accumulated per bomb.  Bombs are processed in entity_id order so
+            the resulting intent list is stable.
+
+        Pass 2 — apply wall destructions:
+            Wall edges are destroyed in entity_id order.  If two bombs target
+            the same edge, the first bomb (by entity_id) gets the reward; the
+            second silently skips it (already gone).
+
+        Indestructible edges block blast without being destroyed.
         """
         intents: list[AttackIntent] = []
         self.last_explosions = []
         defender_ids: set[str] = self.registry.query().type(Defender).ids()
 
         timed_attackers = self.registry.query().type(Timed).type(Attacker).all()
-        attackers = [e for e in timed_attackers if e.expired and e.alive]
+        attackers = sorted(
+            [e for e in timed_attackers if e.expired and e.alive],
+            key=lambda b: b.entity_id,
+        )
 
+        # Pass 1 — compute all blasts against the unmodified wall snapshot.
+        per_bomb: list[tuple[str, set[tuple[int, int, int]]]] = []
         for attacker in attackers:
-            blast_cells, wall_count = self._directional_blast(attacker)
+            blast_cells, walls_to_destroy = self._compute_blast(attacker)
             self.last_explosions.append({
                 "team": attacker.team,
                 "origin": attacker.position.copy(),
@@ -658,19 +662,15 @@ class Dynamics:
                 "cells": blast_cells,
             })
 
-            placing_agent: str = attacker.attribute_rewards
-            for _ in range(wall_count):
-                self.rewards.award(placing_agent, "destroy_wall")
-
             # kablow
             damage = attacker.attack_power
-            attacker.destroy()
+            attacker.destroy() # this is a bomb so destroying after attack makes sense.
 
-            # collect defender targets within the filtered blast area.
+            # collect defender targets within the blast area.
             target_ids: set[str] = set()
             for c in blast_cells:
                 cx, cy = int(c[0]), int(c[1])
-                target_ids |= self.registry.pos_index[cx][cy] # L bro
+                target_ids |= self.registry.pos_index[cx][cy]  # L bro
 
             for eid in target_ids & defender_ids:
                 target = self.registry.get(eid)
@@ -686,6 +686,19 @@ class Dynamics:
                         attribute_rewards=attacker.attribute_rewards,
                     )
                 )
+
+            per_bomb.append((attacker.attribute_rewards, walls_to_destroy))
+
+        # Pass 2 — apply wall destructions.
+        # Process in entity_id order; first bomb to claim a shared edge gets the reward.
+        destroyed_walls: set[tuple[int, int, int]] = set()
+        for placing_agent, walls in per_bomb:
+            for wx, wy, wd in walls:
+                if (wx, wy, wd) in destroyed_walls:
+                    continue
+                if self.arena_state.destroy_wall(wx, wy, Direction(wd)):
+                    destroyed_walls.add((wx, wy, wd))
+                    self.rewards.award(placing_agent, "destroy_wall")
 
         return intents
 
