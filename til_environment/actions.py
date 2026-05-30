@@ -7,12 +7,11 @@ Defines:
 * ``ActionMask`` — mask builder enforcing per-tick legality.
 """
 
-from __future__ import annotations
-
 from enum import IntEnum, auto
 from typing import TYPE_CHECKING, Callable
-from til_environment.types import Direction
+
 import numpy as np
+from til_environment.types import Direction
 
 if TYPE_CHECKING:
     from til_environment.dynamics import Dynamics

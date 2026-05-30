@@ -54,13 +54,10 @@ Public API
 * ``populate_channels``    – shared core; call directly in tests or custom viewers.
 """
 
-from __future__ import annotations
-
 import functools
 from enum import IntEnum
 
 import numpy as np
-
 from til_environment.entities import EntityRegistry
 from til_environment.helpers import (
     get_bit,

@@ -4,8 +4,6 @@ No imports from any other entities/ submodule.  All other submodules import
 from here.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from enum import IntEnum, auto
 from typing import TYPE_CHECKING

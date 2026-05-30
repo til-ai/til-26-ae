@@ -10,8 +10,6 @@ Entities defined here include:
 Imports: base.py, protocols.py.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 from til_environment.entities.base import Entity

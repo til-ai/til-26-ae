@@ -15,13 +15,10 @@ ends up calling via the ``emit`` override below, so wrapped entity
 methods automatically feed the same pipeline.
 """
 
-from __future__ import annotations
-
 from pathlib import Path
 from typing import Any
 
 from omegaconf import DictConfig
-
 from til_environment.events.base import Event
 
 

@@ -4,8 +4,6 @@ No entity state, no registry.  Imports only numpy and stdlib typing.
 No imports from any other entities/ submodule.
 """
 
-from __future__ import annotations
-
 from typing import Protocol
 
 import numpy as np

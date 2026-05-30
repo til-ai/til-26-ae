@@ -6,8 +6,6 @@ bomb placement/detonation, damage, tile collection, resource economy,
 agent freeze/respawn, and visibility.
 """
 
-from __future__ import annotations
-
 import logging
 from collections import defaultdict
 

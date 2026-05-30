@@ -25,8 +25,6 @@ on under the hood and mutate your algos better. Or something
 
 """
 
-from __future__ import annotations
-
 import functools
 from dataclasses import dataclass
 from pathlib import Path

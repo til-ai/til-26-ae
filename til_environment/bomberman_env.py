@@ -5,8 +5,6 @@ Top-level API class.  Inherits from PettingZoo's ``AECEnv`` and delegates all
 game logic to ``Dynamics`` and rendering to ``Renderer``.
 """
 
-from __future__ import annotations
-
 import functools
 import logging
 from functools import partial
@@ -22,8 +20,7 @@ from pettingzoo.utils.conversions import parallel_wrapper_fn
 from pettingzoo.utils.env import ActionType, AgentID, ObsType
 from pettingzoo.utils.wrappers.base import BaseWrapper
 from supersuit import frame_stack_v2
-
-from til_environment.actions import Action, NUM_ACTIONS_V2
+from til_environment.actions import NUM_ACTIONS_V2, Action
 from til_environment.config import (
     default_config,
     load_config,

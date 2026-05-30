@@ -15,17 +15,15 @@ Design notes
 * Both ``"human"`` and ``"rgb_array"`` render modes are supported.
 """
 
-from __future__ import annotations
-
 import colorsys
 import json
 import warnings
 from datetime import datetime
+from itertools import zip_longest
 from pathlib import Path
 
 import numpy as np
 import pygame
-
 from til_environment.entities import (
     Agent,
     Base,
@@ -35,7 +33,6 @@ from til_environment.entities import (
     Recon,
     Resource,
 )
-from itertools import zip_longest
 from til_environment.helpers import get_bit, idx_to_view, view_to_world
 from til_environment.observation import ViewChannel
 from til_environment.types import Direction, Tile, Wall
@@ -972,9 +969,11 @@ class Renderer:
                                     viewcone[
                                         x,
                                         y,
-                                        ViewChannel.ALLY_BOMB_TIMER
-                                        if ally_bomb
-                                        else ViewChannel.ENEMY_BOMB_TIMER,
+                                        (
+                                            ViewChannel.ALLY_BOMB_TIMER
+                                            if ally_bomb
+                                            else ViewChannel.ENEMY_BOMB_TIMER
+                                        ),
                                     ]
                                 )
                                 bomb_r = subpix / 4

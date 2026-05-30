@@ -12,8 +12,6 @@ typed and OOP'd its because the scope of this env used to be significantly large
 more uncertain. Hence protocol maxxed. There are like 5 others that are now gone :skull:
 """
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Callable, Protocol, runtime_checkable
 
 import numpy as np

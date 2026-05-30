@@ -29,8 +29,6 @@ Extracted from ``dynamics.py`` for readability; Dynamics imports and
 composes an ``ArenaGenerator`` instance.
 """
 
-from __future__ import annotations
-
 import logging
 import math
 from dataclasses import dataclass

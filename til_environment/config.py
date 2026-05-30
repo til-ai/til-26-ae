@@ -25,12 +25,10 @@ The config tree mirrors the sub-system hierarchy::
     └── rewards      — reward shaping values
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from omegaconf import OmegaConf, DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 
 # ═══════════════════════════════════════════════════════════════════════════

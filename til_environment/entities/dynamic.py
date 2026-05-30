@@ -6,24 +6,22 @@ effects.  Each explicitly inherits the trait protocols it satisfies.
 Imports: base.py, protocols.py, geometry.py.
 """
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Callable
 
 from til_environment.entities.base import Entity
+from til_environment.entities.geometry import (
+    AttackType,
+    RadiusAttack,
+    SquareVision,
+    VisionType,
+)
 from til_environment.entities.protocols import (
     Attacker,
     Defender,
     ExternalSideEffect,
     Timed,
     Vision,
-)
-from til_environment.entities.geometry import (
-    AttackType,
-    VisionType,
-    SquareVision,
-    RadiusAttack,
 )
 
 if TYPE_CHECKING:
