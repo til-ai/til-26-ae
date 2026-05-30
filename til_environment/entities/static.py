@@ -101,5 +101,3 @@ class Resource(Entity, Item):
         self.use(agent_id)
         self.destroy()
         return self.amount
-
-

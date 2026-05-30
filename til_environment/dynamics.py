@@ -9,16 +9,20 @@ agent freeze/respawn, and visibility.
 from __future__ import annotations
 
 import logging
-
 from collections import defaultdict
+
 import numpy as np
 from gymnasium.utils.seeding import np_random
 from omegaconf import DictConfig
-
-from til_environment.arena import ArenaGenerator, ArenaResult, ArenaState, WallEdge, WallResult  # noqa: F401
+from til_environment.actions import Action, ActionMask
+from til_environment.arena import (  # noqa: F401
+    ArenaGenerator,
+    ArenaResult,
+    ArenaState,
+    WallEdge,
+    WallResult,
+)
 from til_environment.config import default_config, viewcone_tuple
-from til_environment.entities.base import EntityStatus
-from til_environment.events import EmitRule, Rewards
 from til_environment.entities import (
     Agent,
     AttackIntent,
@@ -32,15 +36,17 @@ from til_environment.entities import (
     Resource,
     SquareVision,
 )
+from til_environment.entities.base import EntityStatus
 from til_environment.entities.protocols import (
     Attacker,
     Defender,
     Timed,
     Vision,
 )
+from til_environment.events import EmitRule, Rewards
 from til_environment.helpers import (
-    idx_to_view,
     _los_to_tile,
+    idx_to_view,
     is_world_coord_valid,
     supercover_line,
     view_to_world,
@@ -50,9 +56,7 @@ from til_environment.observation import (
     build_agent_viewcone,
     build_radius_view,
 )
-from til_environment.actions import ActionMask, Action
 from til_environment.types import Direction
-
 
 logger = logging.getLogger(__name__)
 
@@ -253,7 +257,8 @@ class Dynamics:
                         event_type="attack_damage",
                         recipient_fn=lambda r, amt, intent=None, b=entity: (
                             self.registry.agents(b.team)[0].entity_id
-                            if self.registry.agents(b.team) else None
+                            if self.registry.agents(b.team)
+                            else None
                         ),
                         scale_by_return=True,
                         multiplier=-1.0,
@@ -264,7 +269,8 @@ class Dynamics:
                         event_type="own_base_destroyed",
                         recipient_fn=lambda r, amt, intent=None, b=entity: (
                             self.registry.agents(b.team)[0].entity_id
-                            if self.registry.agents(b.team) else None
+                            if self.registry.agents(b.team)
+                            else None
                         ),
                         condition=lambda r, amt, intent=None, e=entity: not e.alive,
                     ),
@@ -288,7 +294,7 @@ class Dynamics:
         """Generate a new episode and populate entities."""
         if self._rng is None or seed is not None:
             self.init_rng(seed)
-        
+
         if self.arena_gen.novice:
             episode_rng, _ = np_random(88)
             episode_seed = 88
@@ -317,9 +323,7 @@ class Dynamics:
         self.team_resources = {
             t: float(rcfg.starting_resources) for t in range(self.num_teams)
         }
-        self.team_bombs = {
-            t: int(rcfg.starting_bombs) for t in range(self.num_teams)
-        }
+        self.team_bombs = {t: int(rcfg.starting_bombs) for t in range(self.num_teams)}
 
         self.rewards.reset()
 
@@ -433,7 +437,9 @@ class Dynamics:
             "base_viewcone": base_view,
             "direction": agent.direction,
             "location": agent.position.copy(),
-            "base_location": base.position.copy() if bases else np.zeros(2, dtype=np.uint8),
+            "base_location": (
+                base.position.copy() if bases else np.zeros(2, dtype=np.uint8)
+            ),
             "health": np.array([agent.health], dtype=np.float32),
             "frozen_ticks": agent.frozen_ticks,
             "base_health": np.array([base_health], dtype=np.float32),
@@ -606,8 +612,11 @@ class Dynamics:
         for we in self.arena_state.wall_edges.values():
             if not we.destructible:
                 continue
-            if (max(abs(we.ax - ox), abs(we.ay - oy)) > r
-                    and max(abs(we.bx - ox), abs(we.by - oy)) > r):
+            # Within blast radius if either adjacent tile is in range.
+            if (
+                max(abs(we.ax - ox), abs(we.ay - oy)) > r
+                and max(abs(we.bx - ox), abs(we.by - oy)) > r
+            ):
                 continue
             if (we.ax, we.ay) in reachable or (we.bx, we.by) in reachable:
                 walls_to_destroy.add((we.ax, we.ay, we.direction.value))
@@ -655,16 +664,18 @@ class Dynamics:
         per_bomb: list[tuple[str, set[tuple[int, int, int]]]] = []
         for attacker in attackers:
             blast_cells, walls_to_destroy = self._compute_blast(attacker)
-            self.last_explosions.append({
-                "team": attacker.team,
-                "origin": attacker.position.copy(),
-                "blast_radius": attacker.blast_radius,
-                "cells": blast_cells,
-            })
+            self.last_explosions.append(
+                {
+                    "team": attacker.team,
+                    "origin": attacker.position.copy(),
+                    "blast_radius": attacker.blast_radius,
+                    "cells": blast_cells,
+                }
+            )
 
             # kablow
             damage = attacker.attack_power
-            attacker.destroy() # this is a bomb so destroying after attack makes sense.
+            attacker.destroy()  # this is a bomb so destroying after attack makes sense.
 
             # collect defender targets within the blast area.
             target_ids: set[str] = set()
@@ -746,7 +757,11 @@ class Dynamics:
             split = 1.0 / len(contributors)
 
             # Agent killed → freeze + split attack_kill among contributors.
-            if isinstance(defender, Agent) and defender.health <= 0 and not defender.is_frozen:
+            if (
+                isinstance(defender, Agent)
+                and defender.health <= 0
+                and not defender.is_frozen
+            ):
                 defender.frozen_ticks = defender.freeze_duration
                 for placer_id in contributors:
                     self.rewards.award(placer_id, "attack_kill", multiplier=split)
@@ -754,7 +769,9 @@ class Dynamics:
             # Base destroyed → split destroy_enemy_base among contributors.
             elif isinstance(defender, Base) and not defender.alive:
                 for placer_id in contributors:
-                    self.rewards.award(placer_id, "destroy_enemy_base", multiplier=split)
+                    self.rewards.award(
+                        placer_id, "destroy_enemy_base", multiplier=split
+                    )
 
         return results
 
@@ -815,7 +832,12 @@ class Dynamics:
     ) -> None:
         """Schedule a collectible to reappear at *position* after *steps* ticks."""
         self._respawn_queue.append(
-            {"kind": kind, "position": position, "kwargs": kwargs, "steps_remaining": steps}
+            {
+                "kind": kind,
+                "position": position,
+                "kwargs": kwargs,
+                "steps_remaining": steps,
+            }
         )
 
     def _spawn_collectible(self, entry: dict) -> None:
@@ -827,11 +849,17 @@ class Dynamics:
         kwargs = entry["kwargs"]
 
         if kind == "mission":
-            e = Mission(entity_id=f"mission_r{uid}", team=None, position=pos.copy(), **kwargs)
+            e = Mission(
+                entity_id=f"mission_r{uid}", team=None, position=pos.copy(), **kwargs
+            )
         elif kind == "recon":
-            e = Recon(entity_id=f"recon_r{uid}", team=None, position=pos.copy(), **kwargs)
+            e = Recon(
+                entity_id=f"recon_r{uid}", team=None, position=pos.copy(), **kwargs
+            )
         elif kind == "resource":
-            e = Resource(entity_id=f"resource_r{uid}", team=None, position=pos.copy(), **kwargs)
+            e = Resource(
+                entity_id=f"resource_r{uid}", team=None, position=pos.copy(), **kwargs
+            )
         else:
             return
 
@@ -853,16 +881,19 @@ class Dynamics:
             steps = int(self.respawn_map[px, py])
             if isinstance(entity, Resource):
                 amount = entity.collect(agent.team, agent.entity_id)
-                self.team_resources[agent.team] = (
-                    self.team_resources.get(agent.team, 0.0) + float(amount or 0.0)
-                )
+                self.team_resources[agent.team] = self.team_resources.get(
+                    agent.team, 0.0
+                ) + float(amount or 0.0)
                 self._queue_respawn("resource", pos, {"amount": entity.amount}, steps)
             elif isinstance(entity, Mission):
                 entity.collect(agent.team, agent.entity_id)
                 self._queue_respawn(
                     "mission",
                     pos,
-                    {"reward_value": entity.reward_value, "difficulty": entity.difficulty},
+                    {
+                        "reward_value": entity.reward_value,
+                        "difficulty": entity.difficulty,
+                    },
                     steps,
                 )
             elif isinstance(entity, Recon):

@@ -38,6 +38,7 @@ from til_environment.types import Direction
 
 logger = logging.getLogger(__name__)
 
+
 def basic_env(
     cfg: DictConfig | str | Path | None = None,
     env_wrappers: list[BaseWrapper] | None = None,
@@ -62,11 +63,11 @@ def basic_env(
     environment = wrappers.OrderEnforcingWrapper(environment)
     return environment
 
+
 parallel_basic_env = parallel_wrapper_fn(basic_env)
 
 
 class Bomberman(AECEnv[AgentID, ObsType, ActionType]):
-
     metadata = {
         "render_modes": ["human", "rgb_array"],
         "name": "til_bomberman",
@@ -141,14 +142,23 @@ class Bomberman(AECEnv[AgentID, ObsType, ActionType]):
                 "location": Box(0, self.grid_size, shape=(2,), dtype=np.uint8),
                 "base_location": Box(0, self.grid_size, shape=(2,), dtype=np.uint8),
                 "health": Box(
-                    0.0, float(self.cfg.entities.agent.max_health), shape=(1,), dtype=np.float32
+                    0.0,
+                    float(self.cfg.entities.agent.max_health),
+                    shape=(1,),
+                    dtype=np.float32,
                 ),
                 "frozen_ticks": Discrete(max_freeze + 1),
                 "base_health": Box(
-                    0.0, float(self.cfg.entities.base.max_health), shape=(1,), dtype=np.float32
+                    0.0,
+                    float(self.cfg.entities.base.max_health),
+                    shape=(1,),
+                    dtype=np.float32,
                 ),
                 "team_resources": Box(
-                    0.0, float(self.cfg.resources.max_team_resources), shape=(1,), dtype=np.float32
+                    0.0,
+                    float(self.cfg.resources.max_team_resources),
+                    shape=(1,),
+                    dtype=np.float32,
                 ),
                 "team_bombs": Discrete(int(self.cfg.resources.max_team_bombs) + 1),
                 "step": Discrete(self.num_iters + 1),
@@ -159,7 +169,6 @@ class Bomberman(AECEnv[AgentID, ObsType, ActionType]):
     @functools.lru_cache(maxsize=None)
     def action_space(self, agent: AgentID | None = None):
         return Discrete(NUM_ACTIONS_V2)
-
 
     def reset(self, seed: int | None = None, options: dict | None = None):
         prev_stats = self._collect_episode_stats()
@@ -209,7 +218,9 @@ class Bomberman(AECEnv[AgentID, ObsType, ActionType]):
             "num_teams": int(self.num_teams),
             "agent_team": agent_team,
             "agent_cumulative_rewards": {k: float(v) for k, v in cumulative.items()},
-            "team_cumulative_rewards": {str(k): float(v) for k, v in team_rewards.items()},
+            "team_cumulative_rewards": {
+                str(k): float(v) for k, v in team_rewards.items()
+            },
             "terminations": dict(getattr(self, "terminations", {})),
             "truncations": dict(getattr(self, "truncations", {})),
         }

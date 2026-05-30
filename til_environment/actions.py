@@ -24,8 +24,8 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 class ActionGroup(IntEnum):
     MOVEMENT = auto()  # FORWARD, BACKWARD, LEFT, RIGHT
-    IDLE = auto()      # STAY
-    COMBAT = auto()    # PLACE_BOMB
+    IDLE = auto()  # STAY
+    COMBAT = auto()  # PLACE_BOMB
 
 
 # ---------------------------------------------------------------------------
@@ -63,7 +63,7 @@ NUM_ACTIONS_V2 = len(Action)
 class ActionMask:
     """
     Builds and validates per-agent action masks.
-    
+
     If you properly read and discovered the code, this should render agent_collide_wall and agent_collide_agent
     """
 

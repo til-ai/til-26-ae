@@ -51,6 +51,7 @@ def _json_default(o):
         return str(o)
     raise TypeError(f"Object of type {type(o).__name__} is not JSON serialisable")
 
+
 # ---------------------------------------------------------------------------
 # Colour palette
 # ---------------------------------------------------------------------------
@@ -167,7 +168,9 @@ class Renderer:
         self._window: pygame.Surface | None = None
         self._clock: pygame.time.Clock | None = None
         self._font: pygame.font.Font | None = None
-        self._video_writer = None   # imageio writer, opened on first frame of each episode
+        self._video_writer = (
+            None  # imageio writer, opened on first frame of each episode
+        )
         self._episode_video_path: Path | None = None  # path for the current episode
         self._episode_count = 0  # monotonic per-Renderer episode counter
         # Path of the most recently finalised mp4 (set by _finalise_writer).
@@ -370,7 +373,9 @@ class Renderer:
 
         needs_frame = self.render_mode == "rgb_array" or self.replay_dir is not None
         frame = (
-            np.transpose(np.array(pygame.surfarray.pixels3d(self._window)), axes=(1, 0, 2))
+            np.transpose(
+                np.array(pygame.surfarray.pixels3d(self._window)), axes=(1, 0, 2)
+            )
             if needs_frame
             else None
         )
@@ -378,6 +383,7 @@ class Renderer:
         if self._episode_video_path is not None and frame is not None:
             if self._video_writer is None:
                 import imageio
+
                 self._episode_video_path.parent.mkdir(parents=True, exist_ok=True)
                 try:
                     self._episode_video_path.parent.touch(exist_ok=True)
@@ -386,7 +392,10 @@ class Renderer:
                         f"Cannot write to replay directory {self._episode_video_path.parent}: {e}"
                     ) from e
                 self._video_writer = imageio.get_writer(
-                    str(self._episode_video_path), fps=self.render_fps, codec="libx264", quality=7
+                    str(self._episode_video_path),
+                    fps=self.render_fps,
+                    codec="libx264",
+                    quality=7,
                 )
             self._video_writer.append_data(frame)
 
@@ -434,7 +443,9 @@ class Renderer:
         half = pix / 2
         for x in range(self.grid_size):
             for y in range(self.grid_size):
-                label = self._font.render(str(int(respawn_map[x, y])), True, (255, 255, 255))
+                label = self._font.render(
+                    str(int(respawn_map[x, y])), True, (255, 255, 255)
+                )
                 lw, lh = label.get_size()
                 self._window.blit(
                     label,
@@ -492,7 +503,10 @@ class Renderer:
 
     def _get_explosion_cell_surf(self, side: int) -> pygame.Surface:
         """Return the shared SRCALPHA cell surface, (re)creating it if the tile size changed."""
-        if self._explosion_cell_surf is None or self._explosion_cell_surf.get_width() != side:
+        if (
+            self._explosion_cell_surf is None
+            or self._explosion_cell_surf.get_width() != side
+        ):
             self._explosion_cell_surf = pygame.Surface((side, side), pygame.SRCALPHA)
         return self._explosion_cell_surf
 
@@ -930,7 +944,9 @@ class Renderer:
                                 pygame.draw.rect(
                                     self._window,
                                     base_color,
-                                    pygame.Rect(cx - side / 2, cy - side / 2, side, side),
+                                    pygame.Rect(
+                                        cx - side / 2, cy - side / 2, side, side
+                                    ),
                                 )
 
                             # Agent — circle in the entity's actual team color.
@@ -952,13 +968,25 @@ class Renderer:
                             ally_bomb = viewcone[x, y, ViewChannel.ALLY_BOMB] > 0.5
                             enemy_bomb = viewcone[x, y, ViewChannel.ENEMY_BOMB] > 0.5
                             if ally_bomb or enemy_bomb:
-                                timer_val = int(viewcone[x, y, ViewChannel.ALLY_BOMB_TIMER if ally_bomb else ViewChannel.ENEMY_BOMB_TIMER])
+                                timer_val = int(
+                                    viewcone[
+                                        x,
+                                        y,
+                                        ViewChannel.ALLY_BOMB_TIMER
+                                        if ally_bomb
+                                        else ViewChannel.ENEMY_BOMB_TIMER,
+                                    ]
+                                )
                                 bomb_r = subpix / 4
                                 pygame.draw.circle(
                                     self._window, COLORS["bomb"], (cx, cy), bomb_r
                                 )
                                 pygame.draw.circle(
-                                    self._window, COLORS["bomb_blast"], (cx, cy), bomb_r, width=1
+                                    self._window,
+                                    COLORS["bomb_blast"],
+                                    (cx, cy),
+                                    bomb_r,
+                                    width=1,
                                 )
                                 # Mini fuse
                                 _FUSE_MAX = 8
@@ -968,7 +996,11 @@ class Renderer:
                                 if fuse_len >= 1:
                                     fuse_tip = (int(cx), int(cy - bomb_r - fuse_len))
                                     pygame.draw.line(
-                                        self._window, (220, 110, 0), fuse_base, fuse_tip, 1
+                                        self._window,
+                                        (220, 110, 0),
+                                        fuse_base,
+                                        fuse_tip,
+                                        1,
                                     )
                                     pygame.draw.circle(
                                         self._window, (255, 240, 60), fuse_tip, 2

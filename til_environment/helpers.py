@@ -138,10 +138,14 @@ def convert_tile_to_edge(arena: np.ndarray, grid: np.ndarray):
     and modifies the input `arena` parameter inplace
     """
     _grid = grid.astype(dtype=np.uint8)
-    arena += _grid[1::2, 0:-2:2] * (1 << Direction.UP.value)     # maze top edge    → bit 3
-    arena += _grid[1::2, 2::2]   * (1 << Direction.DOWN.value)   # maze bottom edge → bit 1
-    arena += _grid[0:-2:2, 1::2] * (1 << Direction.LEFT.value)   # maze left edge   → bit 2
-    arena += _grid[2::2, 1::2]   * (1 << Direction.RIGHT.value)  # maze right edge  → bit 0
+    arena += _grid[1::2, 0:-2:2] * (1 << Direction.UP.value)  # maze top edge    → bit 3
+    arena += _grid[1::2, 2::2] * (1 << Direction.DOWN.value)  # maze bottom edge → bit 1
+    arena += _grid[0:-2:2, 1::2] * (
+        1 << Direction.LEFT.value
+    )  # maze left edge   → bit 2
+    arena += _grid[2::2, 1::2] * (
+        1 << Direction.RIGHT.value
+    )  # maze right edge  → bit 0
 
 
 def _los_to_tile(
@@ -165,8 +169,12 @@ def _los_to_tile(
         if dx != 0 and dy != 0:
             h_dir = 0 if dx > 0 else 2
             v_dir = 1 if dy > 0 else 3
-            h_blocked = bool(state[cx, cy] & (1 << h_dir)) or bool(state[nx, cy] & (1 << v_dir))
-            v_blocked = bool(state[cx, cy] & (1 << v_dir)) or bool(state[cx, ny] & (1 << h_dir))
+            h_blocked = bool(state[cx, cy] & (1 << h_dir)) or bool(
+                state[nx, cy] & (1 << v_dir)
+            )
+            v_blocked = bool(state[cx, cy] & (1 << v_dir)) or bool(
+                state[cx, ny] & (1 << h_dir)
+            )
             if h_blocked and v_blocked:
                 return False
         else:

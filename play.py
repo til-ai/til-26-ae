@@ -116,7 +116,8 @@ def main():
         help="Path to config YAML file (defaults to til_environment/bomberman_config.yaml)",
     )
     parser.add_argument(
-        "--verbose", "-v",
+        "--verbose",
+        "-v",
         action="store_true",
         help="Print action masks and per-step reward breakdowns.",
     )
@@ -204,15 +205,21 @@ def main():
                             break
                         elif event.key == pygame.K_t:
                             show_respawn_overlay = not show_respawn_overlay
-                            print(f"[respawn overlay] {'ON' if show_respawn_overlay else 'OFF'}")
+                            print(
+                                f"[respawn overlay] {'ON' if show_respawn_overlay else 'OFF'}"
+                            )
                         elif event.key in KEY_TO_AGENT_ACTION:
                             agent_action = KEY_TO_AGENT_ACTION[event.key]
                     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                         pending_player_agent = _handle_click(
                             env, event.pos, player_agent, pending_player_agent
                         )
-                        _overlay = env.dynamics.respawn_map if show_respawn_overlay else None
-                        env.render(selected_agent_id=player_agent, respawn_overlay=_overlay)
+                        _overlay = (
+                            env.dynamics.respawn_map if show_respawn_overlay else None
+                        )
+                        env.render(
+                            selected_agent_id=player_agent, respawn_overlay=_overlay
+                        )
             if not running:
                 break
             env.step(int(agent_action))
@@ -229,7 +236,9 @@ def main():
                         pending_player_agent = player_agent
                     elif event.key == pygame.K_t:
                         show_respawn_overlay = not show_respawn_overlay
-                        print(f"[respawn overlay] {'ON' if show_respawn_overlay else 'OFF'}")
+                        print(
+                            f"[respawn overlay] {'ON' if show_respawn_overlay else 'OFF'}"
+                        )
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     pending_player_agent = _handle_click(
                         env, event.pos, player_agent, pending_player_agent

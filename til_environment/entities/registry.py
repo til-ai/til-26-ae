@@ -27,10 +27,11 @@ T = TypeVar("T", bound=Entity)
 
 class Query(Generic[T]):
     """
-    Extremely overengineered query class for composable entity filtering. 
+    Extremely overengineered query class for composable entity filtering.
     Very cool as an idea, but completely unnecessary.
     Actually no it do make the code read nicer so yippee
     """
+
     def __init__(self, registry: "EntityRegistry", ids: Iterable[str] | None = None):
         self._registry = registry
         self._ids: set[str] | None = set(ids) if ids is not None else None

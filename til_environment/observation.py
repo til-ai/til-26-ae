@@ -122,17 +122,17 @@ NUM_CHANNELS = len(ViewChannel)
 # Wall presence bits 0–3 (Direction.value) → WALL_* channel.
 _WALL_BIT_TO_CHANNEL: dict[int, ViewChannel] = {
     Direction.RIGHT.value: ViewChannel.WALL_RIGHT,
-    Direction.DOWN.value:  ViewChannel.WALL_DOWN,
-    Direction.LEFT.value:  ViewChannel.WALL_LEFT,
-    Direction.UP.value:    ViewChannel.WALL_UP,
+    Direction.DOWN.value: ViewChannel.WALL_DOWN,
+    Direction.LEFT.value: ViewChannel.WALL_LEFT,
+    Direction.UP.value: ViewChannel.WALL_UP,
 }
 
 # Destructible flags bits 4–7 (Direction.value + 4) → DESTR_WALL_* channel.
 _DESTR_BIT_TO_CHANNEL: dict[int, ViewChannel] = {
     Direction.RIGHT.value: ViewChannel.DESTR_WALL_RIGHT,
-    Direction.DOWN.value:  ViewChannel.DESTR_WALL_DOWN,
-    Direction.LEFT.value:  ViewChannel.DESTR_WALL_LEFT,
-    Direction.UP.value:    ViewChannel.DESTR_WALL_UP,
+    Direction.DOWN.value: ViewChannel.DESTR_WALL_DOWN,
+    Direction.LEFT.value: ViewChannel.DESTR_WALL_LEFT,
+    Direction.UP.value: ViewChannel.DESTR_WALL_UP,
 }
 
 # NOTE: _TILE_TO_CHANNEL is removed.  Tile presence (mission / recon) is now
@@ -142,6 +142,7 @@ _DESTR_BIT_TO_CHANNEL: dict[int, ViewChannel] = {
 # ═══════════════════════════════════════════════════════════════════════════
 # Vectorized LOS kernel
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 def _encode_path_steps(
     path: list[tuple[int, int]],
@@ -169,20 +170,20 @@ def _encode_path_steps(
             # H1: vertical   edge (nx,py)–(nx,ny)
             # V0: vertical   edge (px,py)–(px,ny)
             # V1: horizontal edge (px,ny)–(nx,ny)
-            h0 = (min(px, nx), py,          0)  # RIGHT bit of left cell
-            h1 = (nx,          min(py, ny), 1)  # DOWN  bit of upper cell
-            v0 = (px,          min(py, ny), 1)  # DOWN  bit of upper cell
-            v1 = (min(px, nx), ny,          0)  # RIGHT bit of left cell
+            h0 = (min(px, nx), py, 0)  # RIGHT bit of left cell
+            h1 = (nx, min(py, ny), 1)  # DOWN  bit of upper cell
+            v0 = (px, min(py, ny), 1)  # DOWN  bit of upper cell
+            v1 = (min(px, nx), ny, 0)  # RIGHT bit of left cell
             steps.append((2, [h0, h1, v0, v1]))
         else:
             if sdx > 0:
-                checks = [(px, py, 0)]       # RIGHT bit of left cell
+                checks = [(px, py, 0)]  # RIGHT bit of left cell
             elif sdx < 0:
-                checks = [(nx, py, 0)]       # RIGHT bit of left cell
+                checks = [(nx, py, 0)]  # RIGHT bit of left cell
             elif sdy > 0:
-                checks = [(px, py, 1)]       # DOWN  bit of upper cell
+                checks = [(px, py, 1)]  # DOWN  bit of upper cell
             else:
-                checks = [(px, ny, 1)]       # DOWN  bit of upper cell
+                checks = [(px, ny, 1)]  # DOWN  bit of upper cell
             steps.append((1, checks))
 
     return steps
@@ -203,8 +204,8 @@ def _precompute_los_table(viewcone: tuple[int, int, int, int]) -> list[dict]:
       ``self_idx``   int            — flat index of the agent's own cell
     where N = vc_l × vc_w and P = max path length across all cells.
     """
-    vc_l = viewcone[2] + viewcone[3] + 1   # rows (behind + ahead + 1)
-    vc_w = viewcone[0] + viewcone[1] + 1   # cols (left  + right + 1)
+    vc_l = viewcone[2] + viewcone[3] + 1  # rows (behind + ahead + 1)
+    vc_w = viewcone[0] + viewcone[1] + 1  # cols (left  + right + 1)
     N = vc_l * vc_w
 
     origin = np.zeros(2, dtype=np.int64)
@@ -218,9 +219,7 @@ def _precompute_los_table(viewcone: tuple[int, int, int, int]) -> list[dict]:
         self_idx = 0
 
         for n, (i, j) in enumerate(np.ndindex((vc_l, vc_w))):
-            view_coord = np.array(
-                [i - viewcone[2], j - viewcone[0]], dtype=np.int64
-            )
+            view_coord = np.array([i - viewcone[2], j - viewcone[0]], dtype=np.int64)
             world_coord = view_to_world(origin, direction, view_coord)
             world_rel[n] = world_coord
 
@@ -235,9 +234,9 @@ def _precompute_los_table(viewcone: tuple[int, int, int, int]) -> list[dict]:
         max_path = max((len(s) for s in all_steps), default=0)
 
         step_type = np.zeros((N, max_path), dtype=np.int8)
-        step_rx   = np.zeros((N, max_path, 4), dtype=np.int32)
-        step_ry   = np.zeros((N, max_path, 4), dtype=np.int32)
-        step_bit  = np.zeros((N, max_path, 4), dtype=np.uint8)
+        step_rx = np.zeros((N, max_path, 4), dtype=np.int32)
+        step_ry = np.zeros((N, max_path, 4), dtype=np.int32)
+        step_bit = np.zeros((N, max_path, 4), dtype=np.uint8)
 
         for n, steps in enumerate(all_steps):
             for k, (stype, checks) in enumerate(steps):
@@ -247,16 +246,18 @@ def _precompute_los_table(viewcone: tuple[int, int, int, int]) -> list[dict]:
                     step_ry[n, k, q] = ry
                     step_bit[n, k, q] = bit
 
-        tables.append({
-            "world_rel": world_rel,
-            "step_type": step_type,
-            "step_rx":   step_rx,
-            "step_ry":   step_ry,
-            "step_bit":  step_bit,
-            "self_idx":  self_idx,
-            "vc_l":      vc_l,
-            "vc_w":      vc_w,
-        })
+        tables.append(
+            {
+                "world_rel": world_rel,
+                "step_type": step_type,
+                "step_rx": step_rx,
+                "step_ry": step_ry,
+                "step_bit": step_bit,
+                "self_idx": self_idx,
+                "vc_l": vc_l,
+                "vc_w": vc_w,
+            }
+        )
 
     return tables
 
@@ -273,15 +274,15 @@ def _vectorized_los(
     Returns a (N,) bool array where ``True`` means the cell is visible from
     ``(ax, ay)``.  Uses only numpy array ops — no Python loops over cells.
     """
-    world_rel = table["world_rel"]   # (N, 2)
-    step_type = table["step_type"]   # (N, P)
-    step_rx   = table["step_rx"]     # (N, P, 4)
-    step_ry   = table["step_ry"]     # (N, P, 4)
-    step_bit  = table["step_bit"]    # (N, P, 4)
+    world_rel = table["world_rel"]  # (N, 2)
+    step_type = table["step_type"]  # (N, P)
+    step_rx = table["step_rx"]  # (N, P, 4)
+    step_ry = table["step_ry"]  # (N, P, 4)
+    step_bit = table["step_bit"]  # (N, P, 4)
 
     # Target world coords and OOB mask.
-    wx = ax + world_rel[:, 0]   # (N,)
-    wy = ay + world_rel[:, 1]   # (N,)
+    wx = ax + world_rel[:, 0]  # (N,)
+    wy = ay + world_rel[:, 1]  # (N,)
     oob = (wx < 0) | (wx >= grid_size) | (wy < 0) | (wy >= grid_size)
 
     if step_type.shape[1] == 0:
@@ -291,20 +292,20 @@ def _vectorized_los(
 
     # Absolute check coordinates — clip for safe indexing; OOB cells are
     # already excluded by ``oob`` so clipped reads don't affect results.
-    cx = np.clip(ax + step_rx, 0, grid_size - 1)   # (N, P, 4)
-    cy = np.clip(ay + step_ry, 0, grid_size - 1)   # (N, P, 4)
+    cx = np.clip(ax + step_rx, 0, grid_size - 1)  # (N, P, 4)
+    cy = np.clip(ay + step_ry, 0, grid_size - 1)  # (N, P, 4)
 
     # Batch state lookup + bit extraction.
-    state_vals = state[cx, cy]                              # (N, P, 4) uint8
+    state_vals = state[cx, cy]  # (N, P, 4) uint8
     hits = ((state_vals >> step_bit) & np.uint8(1)).astype(bool)  # (N, P, 4)
 
     # Per-step blocking.
-    is_valid   = step_type > 0                               # (N, P)
-    is_nondiag = step_type == 1                              # (N, P)
-    is_diag    = step_type == 2                              # (N, P)
+    is_valid = step_type > 0  # (N, P)
+    is_nondiag = step_type == 1  # (N, P)
+    is_diag = step_type == 2  # (N, P)
 
     # Non-diagonal: blocked when hits[..., 0].
-    nd_blocked = hits[..., 0]                                # (N, P)
+    nd_blocked = hits[..., 0]  # (N, P)
     # Diagonal: blocked when (H0∨H1) ∧ (V0∨V1).
     dg_blocked = (hits[..., 0] | hits[..., 1]) & (hits[..., 2] | hits[..., 3])
 
@@ -312,7 +313,7 @@ def _vectorized_los(
 
     path_blocked = np.any(step_blocked & is_valid, axis=1)  # (N,)
     visible = ~oob & ~path_blocked
-    visible[table["self_idx"]] = True                       # own cell always visible
+    visible[table["self_idx"]] = True  # own cell always visible
     return visible
 
 
@@ -459,10 +460,14 @@ def populate_channels(
             if idx is not None:
                 if observer_team is not None and bomb.team == observer_team:
                     view[idx[0], idx[1], ViewChannel.ALLY_BOMB] = 1.0
-                    view[idx[0], idx[1], ViewChannel.ALLY_BOMB_TIMER] = float(bomb.timer)
+                    view[idx[0], idx[1], ViewChannel.ALLY_BOMB_TIMER] = float(
+                        bomb.timer
+                    )
                 else:
                     view[idx[0], idx[1], ViewChannel.ENEMY_BOMB] = 1.0
-                    view[idx[0], idx[1], ViewChannel.ENEMY_BOMB_TIMER] = float(bomb.timer)
+                    view[idx[0], idx[1], ViewChannel.ENEMY_BOMB_TIMER] = float(
+                        bomb.timer
+                    )
 
     # ── 3. static collectibles ─────────────────────────────────────────────
     occupied_by_collectible: set[tuple[int, int]] = set()
@@ -607,7 +612,7 @@ def build_radius_view(
     # (direction 0).  (R,R,R,R) produces offsets (-R..R, -R..R) at direction=0,
     # which matches the dx/dy iteration above exactly.
     sym_vc = (radius, radius, radius, radius)
-    table = _precompute_los_table(sym_vc)[0]   # direction 0 = RIGHT
+    table = _precompute_los_table(sym_vc)[0]  # direction 0 = RIGHT
 
     visible_flat = _vectorized_los(cx, cy, state, table, grid_size)  # (N,) bool
 

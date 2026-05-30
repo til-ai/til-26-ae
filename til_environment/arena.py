@@ -363,7 +363,6 @@ class ArenaState:
         return True
 
 
-
 # ═══════════════════════════════════════════════════════════════════════════
 # ArenaGenerator
 # ═══════════════════════════════════════════════════════════════════════════
@@ -457,7 +456,9 @@ class ArenaGenerator:
             rng_for_maze = rng
             self._maze.set_seed((rng_seed or 0) % 2**32)
 
-        self._generate_maze_with_timeout(rng_for_maze, num_teams=num_teams, phase_offset=phase_offset)
+        self._generate_maze_with_timeout(
+            rng_for_maze, num_teams=num_teams, phase_offset=phase_offset
+        )
         # knock down some walls
         grid = self._maze.grid.copy()
         grid[0, :] = grid[-1, :] = grid[:, 0] = grid[:, -1] = 0
@@ -481,7 +482,9 @@ class ArenaGenerator:
         # Mark a fraction of walls as destructible
         self._mark_destructible_walls(wall_grid, walls, rng, num_teams)
 
-        result = WallResult(wall_grid=wall_grid, walls=walls, seed=rng_seed, num_teams=num_teams)
+        result = WallResult(
+            wall_grid=wall_grid, walls=walls, seed=rng_seed, num_teams=num_teams
+        )
         self._wall_cache = result
         return result
 
@@ -522,7 +525,7 @@ class ArenaGenerator:
         # deferred to _assign_types so subsets renormalize automatically.
         type_probs: dict[str, float] = {
             "mission": mp,
-            "recon":   rp,
+            "recon": rp,
             "resource": sp,
         }
 
@@ -585,7 +588,9 @@ class ArenaGenerator:
             counts = [int(r) for r in raw]
             deficit = n - sum(counts)
             residuals = [r - c for r, c in zip(raw, counts)]
-            for i in sorted(range(len(residuals)), key=lambda i: -residuals[i])[:deficit]:
+            for i in sorted(range(len(residuals)), key=lambda i: -residuals[i])[
+                :deficit
+            ]:
                 counts[i] += 1
 
             shuffled = list(cells)
@@ -628,8 +633,13 @@ class ArenaGenerator:
             if (wall_grid[x, y] & ALL_WALLS_V2) == ALL_WALLS_V2:
                 continue
             centre_hits.append((x, y))
-        _assign_types(centre_hits, rotate=False, type_names=["mission", "resource"], overwrite=True)
-        
+        _assign_types(
+            centre_hits,
+            rotate=False,
+            type_names=["mission", "resource"],
+            overwrite=True,
+        )
+
         return specs
 
     def generate_respawn_map(self, rng_seed: int | None) -> np.ndarray:
@@ -674,17 +684,17 @@ class ArenaGenerator:
         cx, cy = (gs - 1) / 2.0, (gs - 1) / 2.0
         ys, xs = np.mgrid[0:gs, 0:gs]
         dist = np.sqrt((xs.astype(float) - cx) ** 2 + (ys.astype(float) - cy) ** 2)
-        grad = 1.0 - dist / (dist.max() + 1e-9)   # 1 at centre, 0 at corners
+        grad = 1.0 - dist / (dist.max() + 1e-9)  # 1 at centre, 0 at corners
         grad = np.where(grad > 0, grad * 20.0, grad)
         grad /= grad.max() + 1e-9
         grad = np.clip(grad, 0.0, 0.7)
-        grad /= grad.max() + 1e-9                  # cap becomes 1.0
+        grad /= grad.max() + 1e-9  # cap becomes 1.0
 
         # ── 3. Combine ──────────────────────────────────────────────────────
         combined = raw * grad
         combined = np.where(combined > 0, combined * 5.0, combined)
         combined -= combined.min()
-        combined /= combined.max() + 1e-9          # [0, 1], high = centre-like
+        combined /= combined.max() + 1e-9  # [0, 1], high = centre-like
 
         # ── 4. Map to steps ─────────────────────────────────────────────────
         # combined = 1.0 → min_steps  (fast centre)
@@ -722,7 +732,9 @@ class ArenaGenerator:
         # room positions (generate_walls) and the spawn/collectible placement.
         phase_offset = rng.uniform(0.0, 2.0 * math.pi / max(num_teams, 1))
 
-        wall_result = self.generate_walls(rng, rng_seed, num_teams=num_teams, phase_offset=phase_offset)
+        wall_result = self.generate_walls(
+            rng, rng_seed, num_teams=num_teams, phase_offset=phase_offset
+        )
         # Copy so we can mutate without corrupting the cache.
         wall_grid = wall_result.wall_grid.copy()
         walls: set = set(wall_result.walls)
@@ -788,13 +800,18 @@ class ArenaGenerator:
         self, rng: np.random.Generator, num_teams: int = 1, phase_offset: float = 0.0
     ):
         return DungeonRooms(
-            self.grid_size, self.grid_size,
+            self.grid_size,
+            self.grid_size,
             rooms=self._base_rooms(num_teams, phase_offset),
         )
 
     def _generate_maze_with_timeout(
-        self, rng: np.random.Generator, timeout: int = 2, retries: int = 5,
-        num_teams: int = 1, phase_offset: float = 0.0,
+        self,
+        rng: np.random.Generator,
+        timeout: int = 2,
+        retries: int = 5,
+        num_teams: int = 1,
+        phase_offset: float = 0.0,
     ) -> None:
         for attempt in range(retries):
             try:
@@ -899,7 +916,9 @@ class ArenaGenerator:
             dx, dy = bx - ax, by - ay
             d = 0 if dx == 1 else 1 if dy == 1 else 2 if dx == -1 else 3
             wall_grid[ax, ay] = np.uint8(int(wall_grid[ax, ay]) | (1 << (d + 4)))
-            wall_grid[bx, by] = np.uint8(int(wall_grid[bx, by]) | (1 << ((d + 2) % 4 + 4)))
+            wall_grid[bx, by] = np.uint8(
+                int(wall_grid[bx, by]) | (1 << ((d + 2) % 4 + 4))
+            )
 
     def _ensure_connected(
         self, wall_grid: np.ndarray, walls: set
@@ -959,7 +978,9 @@ class ArenaGenerator:
             dx, dy = bx - ax, by - ay
             d = 0 if dx == 1 else 1 if dy == 1 else 2 if dx == -1 else 3
             wall_grid[ax, ay] &= np.uint8(~(1 << d) & ~(1 << (d + 4)) & 0xFF)
-            wall_grid[bx, by] &= np.uint8(~(1 << (d + 2) % 4) & ~(1 << ((d + 2) % 4 + 4)) & 0xFF)
+            wall_grid[bx, by] &= np.uint8(
+                ~(1 << (d + 2) % 4) & ~(1 << ((d + 2) % 4 + 4)) & 0xFF
+            )
 
     # ── unified spawn placement ────────────────────────────────────────────
 
@@ -1193,7 +1214,9 @@ class ArenaGenerator:
                 dx, dy = ex - ax, ey - ay
                 d = 0 if dx == 1 else 1 if dy == 1 else 2 if dx == -1 else 3
                 wall_grid[ax, ay] = np.uint8(int(wall_grid[ax, ay]) | (1 << (d + 4)))
-                wall_grid[ex, ey] = np.uint8(int(wall_grid[ex, ey]) | (1 << ((d + 2) % 4 + 4)))
+                wall_grid[ex, ey] = np.uint8(
+                    int(wall_grid[ex, ey]) | (1 << ((d + 2) % 4 + 4))
+                )
 
     def _clear_base_area(
         self,
