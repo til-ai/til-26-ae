@@ -1,4 +1,4 @@
-from enum import Enum, IntEnum, auto
+from enum import IntEnum
 from typing import TypedDict
 
 import numpy as np
@@ -184,22 +184,6 @@ class Wall(IntEnum):
             (x_corner + square_size * (x + x2), y_corner + square_size * (y + y2)),
             width=width,
         )
-
-
-class RewardNames(str, Enum):
-    GUARD_WINS = auto()
-    GUARD_CAPTURES = auto()
-    SCOUT_CAPTURED = auto()
-    SCOUT_RECON = auto()
-    SCOUT_MISSION = auto()
-    WALL_COLLISION = auto()
-    AGENT_COLLIDER = auto()
-    AGENT_COLLIDEE = auto()
-    STATIONARY_PENALTY = auto()
-    GUARD_TRUNCATION = auto()
-    SCOUT_TRUNCATION = auto()
-    GUARD_STEP = auto()
-    SCOUT_STEP = auto()
 
 
 class Observation(TypedDict):
