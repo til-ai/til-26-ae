@@ -189,7 +189,6 @@ class RewardsConfig:
     agent_collide_agent: float = 0
     collect_mission: float = 5.0
     collect_recon: float = 1.0
-    collect_resource: float = 2.0
     attack_damage: float = 1.0
     attack_kill: float = 15.0
     destroy_wall: float = 0

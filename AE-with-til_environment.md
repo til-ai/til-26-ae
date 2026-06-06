@@ -177,7 +177,6 @@ All reward values are in the config under `rewards`. As you may notice, several 
 | `agent_collide_agent` | 0                          | Agent                         | Agent attempts to move into another agent                                                     |
 | `collect_mission`     | 5.0                        | Agent                         | Agent steps onto a mission tile                                                               |
 | `collect_recon`       | 1.0                        | Agent                         | Agent steps onto a recon tile                                                                 |
-| `collect_resource`    | 2.0                        | Agent                         | Agent steps onto a resource tile                                                              |
 | `attack_damage`       | 1.0× damage dealt (20 pts) | Attacker (-1.0× for Defender) | Bomb damages an agent or base; defender receives the equal-and-opposite penalty automatically |
 | `attack_kill`         | 15.0                       | Attacker (flat)               | Bomb reduces an agent to 0 HP                                                                 |
 | `destroy_wall`        | 0                          | Attacker                      | Bomb destroys a destructible wall                                                             |

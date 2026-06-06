@@ -34,11 +34,10 @@ entities:
   bomb:
     attack: 20.0
     blast_radius: 2
-    timer: 3
+    timer: 4
 
   mission:
     reward_value: 5.0
-    difficulty: 1.0
 
   recon:
     reward_value: 1.0
@@ -65,9 +64,8 @@ rewards:
   agent_collide_agent: 0
   collect_mission: 5.0
   collect_recon: 1.0
-  collect_resource: 2.0
   attack_damage: 1.0
-  attack_kill: 30.0
+  attack_kill: 15.0
   destroy_wall: 0
   destroy_enemy_base: 50.0
   own_base_destroyed: -50.0

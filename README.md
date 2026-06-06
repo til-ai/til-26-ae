@@ -127,15 +127,15 @@ dynamics:
     left: 2
     right: 2
     ahead: 4
-    behind: 1
+    behind: 2
 entities:
   agent:
-    max_health: 100.0
+    max_health: 60.0
     freeze_turns: 3
   base:
-    max_health: 200.0
+    max_health: 100.0
   bomb:
-    timer: 5
+    timer: 3
     blast_radius: 2
 resources:
   bomb_cost: 1.5
@@ -143,7 +143,7 @@ resources:
   starting_bombs: 3
 rewards:
   collect_mission: 5.0
-  attack_kill: 10.0
+  attack_kill: 15.0
   destroy_enemy_base: 50.0
 ```
 
